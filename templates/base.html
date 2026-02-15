@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+    <title>{% block title %}{% endblock %}</title>
+  </head>
+
+  <body>
+    <nav class="navbar navbar-expand-md navbar-light bg-light">
+      <a class="navbar-brand" href="{{ url_for('index') }}">Home Server</a>
+
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+              aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+
+          <!-- Home -->
+          <li class="nav-item {% if request.endpoint == 'index' %}active{% endif %}">
+            <a class="nav-link" href="{{ url_for('index') }}">Home</a>
+          </li>
+
+          <!-- Posts -->
+          <li class="nav-item {% if request.endpoint == 'posts' %}active{% endif %}">
+            <a class="nav-link" href="{{ url_for('posts') }}">Posts</a>
+          </li>
+
+          <!-- Create -->
+          <li class="nav-item {% if request.endpoint == 'create' %}active{% endif %}">
+            <a class="nav-link" href="{{url_for('create')}}">New Post</a>
+          </li>
+
+          <!-- About -->
+          <li class="nav-item {% if request.endpoint == 'about' %}active{% endif %}">
+            <a class="nav-link" href="{{ url_for('about') }}">About</a>
+          </li>
+
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% for message in get_flashed_messages() %}
+          <div class="alert alert-danger">{{ message }}</div>
+        {% endfor %}
+      {% block content %}{% endblock %}
+    </div>
+
+    <!-- JS: jQuery, Popper, Bootstrap -->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" crossorigin="anonymous"></script>
+  </body>
+</html>

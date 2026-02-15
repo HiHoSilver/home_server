@@ -1,0 +1,17 @@
+<!-- <!DOCTYPE html>
+<html>
+    <head>
+        <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+        <title>Home Server</title>
+    </head>
+    <body>
+        <h1>About</h1>
+        <p>...</p>
+    </body>
+</html> -->
+
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>{% block title %} About {% endblock %}</h1>
+{% endblock %}

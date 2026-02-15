@@ -1,0 +1,30 @@
+<!-- <!DOCTYPE html>
+<html>
+    <head>
+        <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="{{ url_for('static', filename= 'css/style.css') }}">
+        <title>Home Server</title>
+    </head>
+    <body>
+        <h1>Welcome to Home Network Server</h1>
+        <p>This page is served from Flask</p>
+    </body>
+</html> -->
+
+{% extends "base.html" %}
+
+{% block title %}
+    Welcome to Home Server
+{% endblock %}
+
+{% block content %}
+    <h1>Welcome to Home Server</h1>
+    <p>Pages:</p>
+        <ul><a href="http://ascend:5000/posts">Posts page</a></ul>
+        <ul><a href="http://ascend:5000/create">Create new post</a></ul>
+        <ul><a href="http://ascend:5000/about">About page</a></ul>
+    <p>Endpoints:</p>
+        <ul>/api/status</ul>
+        <ul>/api/data</ul>
+{% endblock %}
