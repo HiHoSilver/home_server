@@ -1,4 +1,5 @@
 import sqlite3
+import time
 
 connection = sqlite3.connect('database.db')
 
@@ -11,6 +12,8 @@ cur.execute(
     "INSERT INTO posts (title, content) VALUES (?, ?)",
     ('First Post', 'Content for the first post')
 )
+
+time.sleep(1)
 
 cur.execute(
     "INSERT INTO posts (title, content) VALUES (?, ?)",

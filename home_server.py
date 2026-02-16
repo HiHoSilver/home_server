@@ -1,7 +1,18 @@
+import time
 import sqlite3
+import platform
+import atexit
 from flask import Flask, render_template, jsonify, request, url_for, flash, redirect
 from werkzeug.exceptions import abort
 from config import SECRET_KEY
+from arduino import send_msg_to_arduino
+
+app = Flask(__name__)
+app.config['SECRET_KEY'] = SECRET_KEY
+
+START_TIME = time.time()
+REQUEST_COUNT = 0
+SERVER_VERSION = "0.0.1"
 
 # Database
 def get_db_conn():
@@ -21,8 +32,10 @@ def get_post(post_id):
     return post
 
 # Application
-app = Flask(__name__)
-app.config['SECRET_KEY'] = SECRET_KEY
+@app.before_request
+def count_requests():
+    global REQUEST_COUNT
+    REQUEST_COUNT += 1
 
 @app.route('/')
 def index():
@@ -31,7 +44,7 @@ def index():
 @app.route('/posts')
 def posts():
     conn = get_db_conn()
-    posts = conn.execute('SELECT * FROM posts').fetchall()
+    posts = conn.execute('SELECT * FROM posts ORDER BY created DESC').fetchall()
     conn.close
     return render_template('posts.html', posts=posts)
 
@@ -109,5 +122,33 @@ def api_data():
         "key2": "data2"
     })
 
+def format_uptime(seconds):
+    days = seconds // 86400
+    seconds %= 86400
+    hours = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60
+    return f"{days}d {hours}h {minutes}m {seconds}s"
+
+@app.route("/api/stats")
+def stats():
+    uptime_seconds = int(time.time() - START_TIME)
+
+    return jsonify({
+        "uptime_seconds": uptime_seconds,
+        "uptime_time": format_uptime(uptime_seconds),
+        "requests_handled": REQUEST_COUNT,
+        "server_version": SERVER_VERSION,
+        "python_version": platform.python_version()
+    })
+
+def on_shutdown():
+    print("Server is shutting down...")
+    send_msg_to_arduino("  Waiting for input...")
+
+atexit.register(on_shutdown)
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000) 
+    send_msg_to_arduino("  Home server active...")
+    app.run(host='0.0.0.0', port=5000)

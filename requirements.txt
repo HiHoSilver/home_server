@@ -1,1 +1,2 @@
 flask
+pyserial      # only required for arduino integration
