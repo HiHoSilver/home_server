@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Temperature & Humidity{% endblock %}
+
+{% block content %}
+<h1>Temperature & Humidity</h1>
+
+<div id="chart"></div>
+
+<!-- Plotly figure JSON -->
+<script id="graph-data" type="application/json">
+    {{ graphJSON | safe }}
+</script>
+
+<!-- Plotly rendering -->
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<script>
+    const figure = JSON.parse(document.getElementById('graph-data').textContent);
+    Plotly.newPlot('chart', figure.data, figure.layout);
+</script>
+{% endblock %}

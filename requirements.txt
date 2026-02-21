@@ -1,2 +1,4 @@
 flask
-pyserial      # only required for arduino integration
+pandas
+plotly
+pyserial      # only required for sending text over usb to arduino
