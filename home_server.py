@@ -1,4 +1,5 @@
 import time
+from threading import Thread, Event
 import sqlite3
 import json
 from datetime import datetime
@@ -17,8 +18,14 @@ from arduino import send_msg_to_arduino
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
 
-START_TIME = time.time()
-REQUEST_COUNT = 0
+# For notification timer
+NOTIFICATION_TIMER_FLAG = False
+led_state = False
+stop_event = Event()
+
+# For server status endpoint
+start_time = time.time()
+request_count = 0
 SERVER_VERSION = "0.0.1"
 
 # -----------Databases-----------
@@ -43,12 +50,40 @@ def get_thermo_db_conn():
     conn.row_factory = sqlite3.Row
     return conn
 
-# -----------Application-----------
+# -----------Timer for ESP32 LEDs-----------
+def notification_timer_worker():
+    # Capture the flag ONCE at startup
+    if not NOTIFICATION_TIMER_FLAG:
+        print("LED notification timer disabled at startup.")
+        # Still keep the thread alive so shutdown works cleanly
+        while not stop_event.is_set():
+            time.sleep(1)
+        return
+
+    print("LED notification timer enabled at startup.")
+
+    while not stop_event.is_set():
+        if led_state:
+            print("Timer started...")
+
+            for _ in range(6):
+                if stop_event.is_set() or not led_state:
+                    print("Timer ended...")
+                    break
+                time.sleep(1)
+
+            if led_state and not stop_event.is_set():
+                print("Timer up. Restarting...")
+
+        else:
+            time.sleep(1)
+
+# -----------Web App-----------
 # Request counter
 @app.before_request
 def count_requests():
-    global REQUEST_COUNT
-    REQUEST_COUNT += 1
+    global request_count
+    request_count += 1
 
 # Index page
 @app.route('/')
@@ -246,7 +281,7 @@ def format_uptime(seconds):
     return f"{days}d {hours}h {minutes}m {seconds}s"
 
 # ESP32 LED endpoint
-esp_ips = ['192.168.1.30', 	'192.168.1.31']
+esp_ips = ['192.168.1.30', '192.168.1.31']
 led_state = False
 last_seen = {}      # TODO: Expose as endpoint?
 
@@ -274,6 +309,8 @@ def esp32_led():
             led_state = True
         elif state == 'off':
             led_state = False
+            stop_event.set()      # wakes the thread immediately
+            stop_event.clear()    # reset for next cycle
         else:
             return jsonify({'error': 'invalid state'}), 400
 
@@ -293,24 +330,31 @@ def esp32_led():
 
 @app.route('/api/server_status')
 def server_status():
-    uptime_seconds = int(time.time() - START_TIME)
+    uptime_seconds = int(time.time() - start_time)
 
     return jsonify({
         "uptime_seconds": uptime_seconds,
         "uptime_time": format_uptime(uptime_seconds),
-        "requests_handled": REQUEST_COUNT,
+        "requests_handled": request_count,
         "server_version": SERVER_VERSION,
         "python_version": platform.python_version()
     })
 
-# Arduino integration
+# Shutdown tasks
 def on_shutdown():
     print("Server is shutting down...")
-    # send_msg_to_arduino("  Waiting for input...")
+
+    # Signal the worker thread to stop immediately
+    stop_event.set()
+
+    # Wait for the worker thread to exit cleanly
+    worker_thread.join()
 
 atexit.register(on_shutdown)
 
 if __name__ == "__main__":
     # send_msg_to_arduino("  Home server active...")
+    worker_thread = Thread(target=notification_timer_worker, daemon=True)
+    worker_thread.start()
     app.run(host='0.0.0.0', port=5000)
  
