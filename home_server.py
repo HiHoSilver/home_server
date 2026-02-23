@@ -1,6 +1,7 @@
 import time
 import sqlite3
 import json
+from datetime import datetime
 from zoneinfo import ZoneInfo
 import platform
 import atexit
@@ -9,6 +10,7 @@ from werkzeug.exceptions import abort
 import pandas as pd
 from plotly.utils import PlotlyJSONEncoder
 import plotly.express as px
+import requests
 from config import SECRET_KEY
 from arduino import send_msg_to_arduino
 
@@ -19,7 +21,7 @@ START_TIME = time.time()
 REQUEST_COUNT = 0
 SERVER_VERSION = "0.0.1"
 
-# -----------Database-----------
+# -----------Databases-----------
 def get_posts_db_conn():
     conn = sqlite3.connect('database\\posts_database.db')
     conn.row_factory = sqlite3.Row
@@ -242,6 +244,52 @@ def format_uptime(seconds):
     minutes = seconds // 60
     seconds %= 60
     return f"{days}d {hours}h {minutes}m {seconds}s"
+
+# ESP32 LED endpoint
+esp_ips = ['192.168.1.30', 	'192.168.1.31']
+led_state = False
+last_seen = {}      # TODO: Expose as endpoint?
+
+@app.route('/api/esp32_led', methods=['GET', 'POST'])
+def esp32_led():
+    global led_state, last_seen
+
+    if request.method == 'GET':
+        sender_ip = request.remote_addr
+        last_seen[sender_ip] = datetime.now(ZoneInfo("America/New_York"))
+
+        return jsonify({
+            'state': led_state,
+            'last_seen': last_seen[sender_ip].isoformat()
+        }), 200
+
+    if request.method == 'POST':
+        sender_ip = request.remote_addr
+        last_seen[sender_ip] = datetime.now(ZoneInfo("America/New_York"))
+
+        data = request.get_json(silent=True) or {}
+        state = data.get('state')
+
+        if state == 'on':
+            led_state = True
+        elif state == 'off':
+            led_state = False
+        else:
+            return jsonify({'error': 'invalid state'}), 400
+
+        # Broadcast to all ESP32s
+        for target_ip in esp_ips:
+            try:
+                response = requests.post(
+                    f"http://{target_ip}/led",
+                    json={"state": state},
+                    timeout=2
+                )
+                print(f"Broadcast to {target_ip}: {response.status_code}")
+            except Exception as e:
+                print(f"Error sending to {target_ip}: {e}")
+
+        return jsonify({'success': True, 'state': led_state}), 200
 
 @app.route('/api/server_status')
 def server_status():
