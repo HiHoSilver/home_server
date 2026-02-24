@@ -12,7 +12,8 @@
         <ul><a href="http://ascend:5000/graph">Temp and Humidity Graph</a></ul>
         <ul><a href="http://ascend:5000/about">About page</a></ul>
     <p>Endpoints:</p>
-    <ul>/api/data [GET]</ul>
-    <ul>/api/thermo [POST]</ul>
-    <ul>/api/server_status [GET]</ul>
+    <ul>/api/data [GET] - Last temp and humidity readings, total number of readings in db</ul>
+    <ul>/api/thermo [POST] - Parse and store temp and humidity readings from Arduino</ul>
+    <ul>/api/esp32_led [GET, POST] - ESP32 LED syncronization with server, parse and store on / off responses</ul>
+    <ul>/api/server_status [GET] - Server uptime, number of requests served, etc.</ul>
 {% endblock %}

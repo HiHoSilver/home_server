@@ -12,16 +12,24 @@ import pandas as pd
 from plotly.utils import PlotlyJSONEncoder
 import plotly.express as px
 import requests
-from config import SECRET_KEY
+from config import SECRET_KEY, IFTTT_KEY
 from arduino import send_msg_to_arduino
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
 
 # For notification timer
-NOTIFICATION_TIMER_FLAG = False
+NOTIFICATION_TIMER_FLAG = True
 led_state = False
 stop_event = Event()
+
+set_timer_seconds = 60
+timer_runs = 0
+
+# For IFTTT Notifications
+IFTTT_EVENT = "flask_dog_alert"
+IFTTT_API_KEY = IFTTT_KEY
+IFTTT_URL = f"https://maker.ifttt.com/trigger/{IFTTT_EVENT}/json/with/key/{IFTTT_API_KEY}"
 
 # For server status endpoint
 start_time = time.time()
@@ -50,32 +58,45 @@ def get_thermo_db_conn():
     conn.row_factory = sqlite3.Row
     return conn
 
+# -----------IFTTT Notifications-----------
+def send_ifttt_notification():
+    timer_run_minutes = (set_timer_seconds * timer_runs) / 60
+    data = {"minutes": timer_run_minutes}
+    requests.post(IFTTT_URL, json=data)
+
 # -----------Timer for ESP32 LEDs-----------
 def notification_timer_worker():
-    # Capture the flag ONCE at startup
     if not NOTIFICATION_TIMER_FLAG:
         print("LED notification timer disabled at startup.")
-        # Still keep the thread alive so shutdown works cleanly
         while not stop_event.is_set():
             time.sleep(1)
         return
 
     print("LED notification timer enabled at startup.")
 
+    global timer_runs
+
     while not stop_event.is_set():
         if led_state:
             print("Timer started...")
 
-            for _ in range(6):
+            interrupted = False
+
+            for _ in range(set_timer_seconds):
                 if stop_event.is_set() or not led_state:
+                    interrupted = True
                     print("Timer ended...")
+                    timer_runs = 0
                     break
                 time.sleep(1)
 
-            if led_state and not stop_event.is_set():
-                print("Timer up. Restarting...")
+            if not interrupted and led_state and not stop_event.is_set():
+                timer_runs += 1
+                send_ifttt_notification()
+                print(f"Timer up. Restarting... (runs: {timer_runs})")
 
         else:
+            timer_runs = 0
             time.sleep(1)
 
 # -----------Web App-----------
