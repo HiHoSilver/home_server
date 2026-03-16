@@ -12,7 +12,7 @@ import pandas as pd
 from plotly.utils import PlotlyJSONEncoder
 import plotly.express as px
 import requests
-from config import SECRET_KEY, IFTTT_KEY
+from config import SECRET_KEY, IFTTT_KEY, ESP_IPS
 from arduino import send_msg_to_arduino
 
 app = Flask(__name__)
@@ -302,7 +302,7 @@ def format_uptime(seconds):
     return f"{days}d {hours}h {minutes}m {seconds}s"
 
 # ESP32 LED endpoint
-esp_ips = ['192.168.1.30', '192.168.1.31']
+esp_ips = ESP_IPS
 led_state = False
 last_seen = {}      # TODO: Expose as endpoint?
 
